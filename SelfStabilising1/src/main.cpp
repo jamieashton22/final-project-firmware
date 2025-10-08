@@ -1,15 +1,24 @@
+
+
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <math.h>
+#include <Servo.h>
 
 #define COMP_ALPHA 0.94
+#define PITCH_PIN 9
 
 Adafruit_MPU6050 mpu;
+Servo PitchServo;
 
 float prev_roll = 0.0;
 float prev_pitch = 0.0;
+
+float initial_roll = 0.0;
+float initial_pitch = 0.0;
+
 
 unsigned long prevTime = 0;   // to get loop timing 
 float dt = 0.0;
@@ -36,27 +45,51 @@ void setup() {
     mpu.setGyroRange(MPU6050_RANGE_500_DEG);      // set gyro sensitivity
     mpu.setFilterBandwidth(MPU6050_BAND_21_HZ); // apply a low pass filter
 
+    PitchServo.attach(PITCH_PIN);
+
+    sensors_event_t a, g, temp;
+    mpu.getEvent(&a, &g, &temp);    // reciever data for accelertion, angular velocity & temp
+
+    initial_roll = (atan2(a.acceleration.y,a.acceleration.z));
+    initial_pitch = atan2(-1*a.acceleration.x, sqrt(pow(a.acceleration.y,2) + pow(a.acceleration.z,2)));  // use accelerometer to get rough intial position
+    
     prevTime = micros();  // initialise prev time to not be zero
 }
 
 void loop() {
 
-  unsigned long currTime = micros();          // current time in µs
-  dt = (currTime - prevTime) / 1000000.0;     // convert to seconds
-  prevTime = currTime;
-  if (dt > 0.05) dt = 0.05;   // cap initial dt
+// ======= MAIN CODE =========
+
+//   unsigned long currTime = micros();          // current time in µs
+//   dt = (currTime - prevTime) / 1000000.0;     // convert to seconds
+//   prevTime = currTime;
+//   if (dt > 0.05) dt = 0.05;   // cap initial dt
   
-  sensors_event_t a, g, temp;
-  mpu.getEvent(&a, &g, &temp);    // reciever data for accelertion, angular velocity & temp
+//   sensors_event_t a, g, temp;
+//   mpu.getEvent(&a, &g, &temp);    // reciever data for accelertion, angular velocity & temp
 
-  roll_pitch comp_angles = CompFilter(a.acceleration.x,a.acceleration.y, a.acceleration.z, g.gyro.x, g.gyro.y, COMP_ALPHA, dt);
+//   roll_pitch comp_angles = CompFilter(a.acceleration.x,a.acceleration.y, a.acceleration.z, g.gyro.x, g.gyro.y, COMP_ALPHA, dt);
 
-Serial.print(comp_angles.roll * 180.0 / PI);
-Serial.print(", ");
-Serial.println(comp_angles.pitch * 180.0 / PI);
+// Serial.print(comp_angles.roll * 180.0 / PI);
+// Serial.print(", ");
+// Serial.println(comp_angles.pitch * 180.0 / PI);
 
-delay(100);
+// delay(100);
 
+// ======= SERVO TESTING CODE =========
+
+// PitchServo.write(0); //min
+
+PitchServo.write(90); // max
+
+// PitchServo.write(0);
+// delay(3000);
+
+// for(int i = 0; i<180; i++){
+//   PitchServo.write(i);        // test positive movement
+// }
+
+// delay(10000);
 
 }
 
@@ -84,3 +117,5 @@ roll_pitch CompFilter(float _ax,float _ay, float _az, float _wx, float _wy, floa
   return _roll_pitch;
 
 }
+
+// need function that gives us our initial values or just run the function once at setpoint 
