@@ -4,7 +4,7 @@
 #include <Adafruit_Sensor.h>
 #include <math.h>
 
-#define COMP_ALPHA 0.99
+#define COMP_ALPHA 0.94
 
 Adafruit_MPU6050 mpu;
 
@@ -13,7 +13,6 @@ float prev_pitch = 0.0;
 
 unsigned long prevTime = 0;   // to get loop timing 
 float dt = 0.0;
-
 
 typedef struct roll_pitch {   // struct for comp filter return type
   float roll;
@@ -37,6 +36,7 @@ void setup() {
     mpu.setGyroRange(MPU6050_RANGE_500_DEG);      // set gyro sensitivity
     mpu.setFilterBandwidth(MPU6050_BAND_21_HZ); // apply a low pass filter
 
+    prevTime = micros();  // initialise prev time to not be zero
 }
 
 void loop() {
@@ -44,6 +44,7 @@ void loop() {
   unsigned long currTime = micros();          // current time in µs
   dt = (currTime - prevTime) / 1000000.0;     // convert to seconds
   prevTime = currTime;
+  if (dt > 0.05) dt = 0.05;   // cap initial dt
   
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);    // reciever data for accelertion, angular velocity & temp
