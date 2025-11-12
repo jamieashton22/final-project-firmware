@@ -6,9 +6,10 @@ FIRMWARE FOR SELF STABILISING ROBOTIC ARM - VERSION 1
 
 
  TO DO
+ - Test serial connection - DONE
  - Create end-effector class
  - Add complementary filter
- - Create receiver function
+ - Create receiver  class files 
  - Create PID class 
 */
 
@@ -18,6 +19,7 @@ FIRMWARE FOR SELF STABILISING ROBOTIC ARM - VERSION 1
 #include <Adafruit_Sensor.h>
 #include <math.h>
 #include <Servo.h>
+#include "Receiver.h"
 
 
 // -------------------------- MACROS --------------------------------------------------
@@ -25,20 +27,15 @@ FIRMWARE FOR SELF STABILISING ROBOTIC ARM - VERSION 1
 
 // -------------------------- GLOBAL --------------------------------------------------
 
+Receiver Arduino_receiver(9600);    // declares receiver object 
 
 // -------------------------- FUNCTION DEFINITIONS --------------------------------------------------
-
-String ReceiveSerialInput();   // to recieve input message from python script
-void SendSerialOutput(String output_message);      // to output a message to python
-void TestSerialConnection(String input_message);                // function to test the serial connection
-
 
 // -------------------------- SET-UP ----------------------------------------------------------------
 
 void setup() {
 
-    // start serial
-    Serial.begin(9600);
+    Arduino_receiver.StartSerialConnection();
 
     // onboard LED for testing serial
     pinMode(LED_BUILTIN, OUTPUT);
@@ -48,49 +45,9 @@ void setup() {
 
 void loop() {
 
-    String input_message = ReceiveSerialInput();
-    TestSerialConnection(input_message);
+    String input_message = Arduino_receiver.ReceiveSerialInput();
+    Arduino_receiver.TestSerialConnection(input_message);
     delay(100);
 
 }
 
-// -------------------------- SERIAL COMMUNICATIONS FUNCTIONS  ----------------------------------------------------------------
-
-String ReceiveSerialInput(){
-
-    String serialInput = "";
-    if (Serial.available() > 0) {
-
-        serialInput = Serial.readStringUntil('\n');
-        serialInput.trim();
-
-    }
-
-    return(serialInput);
-}
-
-void SendSerialOutput(String output_message){
-
-    Serial.print(output_message);
-
-}
-
-void TestSerialConnection(String input_message){
-
-    int x = -1;
-
-    sscanf(input_message.c_str(), "%d", &x);
-    
-    if(x == 1){
-
-        digitalWrite(LED_BUILTIN, HIGH);
-
-    }
-    
-    else{
-
-        digitalWrite(LED_BUILTIN, LOW);
-
-    }
-
-}
