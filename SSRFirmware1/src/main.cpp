@@ -34,6 +34,7 @@ TO DO
 #include <Servo.h>
 #include "Receiver.h"
 #include "EndEffector.h"
+#include "RobotArm.h"
 
 
 // -------------------------- MACROS --------------------------------------------------
@@ -45,11 +46,17 @@ TO DO
 
 #define COMP_FILTER_ALPHA 0.94
 
+#define BASE_PIN 11
+#define SHOULDER_PIN 12
+#define ELBOW_PIN 13
+
 // -------------------------- GLOBAL --------------------------------------------------
 
 Receiver Arduino_receiver(9600);    // declares receiver object 
 
 EndEffector SSPlatform(ROLL_PIN, PITCH_PIN);    // declares EE object
+
+RobotArm Arm(BASE_PIN, SHOULDER_PIN, ELBOW_PIN);
 
 unsigned long prev_time = 0;
 float dt = 0.0;                 // for loop timing
@@ -86,6 +93,23 @@ void loop() {
     IMU_values raw_IMU_reading = SSPlatform.getRawIMU();
     // filter it
     roll_pitch fused_IMU_reading = SSPlatform.CompFilter(raw_IMU_reading, COMP_FILTER_ALPHA, dt);
+
+    // recieve input message from python
+    int q0 = 90; int q1 = 90; int q2 = 90;  // maybe safe positions?
+    char j = ' '; 
+    int q = 0;
+    String anglesInput = Arduino_receiver.ReceiveSerialInput();
+
+    // // write Multiple joint angles  // TEMP -- FOR DEBUGGING
+    // sscanf(anglesInput.c_str(), "%d,%d,%d", &q0, &q1, &q2);
+    // Arm.UpdatePosition(q0,q1,q2);
+
+    // // write single joint angle     // TEMP -- FOR DEBUGGING
+    // sscanf(anglesInput.c_str(), "%c,%d", &j, &q);
+    // Arm.UpdateSinglePosition(j,q);
+
+    sscanf(anglesInput.c_str(), "%c,%d,%d,%d,%d", &j, &q, &q0, &q1, &q2);
+    Arm.UpdatePositionGeneral(j,q,q0,q1,q2);
 
     delay(100);
 

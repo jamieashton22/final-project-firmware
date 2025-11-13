@@ -25,6 +25,8 @@ String Receiver::ReceiveSerialInput(){  // to receive message from front end
 
 }
 
+
+
 void Receiver::SendSerialOutput(String _output_message){    // to send message to front end
 
     Serial.println(_output_message);
