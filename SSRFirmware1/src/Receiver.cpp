@@ -27,7 +27,7 @@ String Receiver::ReceiveSerialInput(){  // to receive message from front end
 
 void Receiver::SendSerialOutput(String _output_message){    // to send message to front end
 
-    Serial.print(_output_message);
+    Serial.println(_output_message);
 
 }
 
@@ -40,12 +40,14 @@ void Receiver::TestSerialConnection(String _input_message){ // to test serial co
     if(x == 1){
 
         digitalWrite(LED_BUILTIN, HIGH);
+        SendSerialOutput("1");
 
     }
     
     else{
 
         digitalWrite(LED_BUILTIN, LOW);
+        SendSerialOutput("0");
 
     }
 

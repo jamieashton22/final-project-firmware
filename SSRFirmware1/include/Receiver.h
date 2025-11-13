@@ -15,10 +15,15 @@ class Receiver{
     public:
 
         Receiver(int _baud_rate);
-        void StartSerialConnection();
+
+        void StartSerialConnection();   // to begin the serial connection
+
         String ReceiveSerialInput();   // to recieve input message from python script
+
         void SendSerialOutput(String _output_message);      // to output a message to python
-        void TestSerialConnection(String _input_message);   
+
+        void TestSerialConnection(String _input_message);    
+
 
 };
 
