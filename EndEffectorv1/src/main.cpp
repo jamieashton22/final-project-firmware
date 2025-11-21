@@ -7,8 +7,8 @@
 
   TODO: 
         fix calibration - determine pitch and roll setpoints from calibration
-        adjust everything for the 2/3 situation
-        add delayed movement 
+        adjust everything for the 2/3 situation - honestly no clue with this one
+        add delayed movement - DONE (SORT OF)
         Modify P controller - DONE
         Modify PI controller - DONE
         Write PID controller - 
@@ -19,13 +19,15 @@
 
   so sequence goes
   setup: initialise MPU, attach servo pins, init prev_roll and prev_pitch, init time w micros()
-  loop: calculate loop timing, read and filter IMU, put that into PID to get new angles, write new angles to servo
+  loop: calculate loop timing, read and filter IMU, put that into PID to get new angles, write new angles to servo w delays (incremental/sweep) 
 
 
   TESTING W HARDWARE:
   make sure IMU giving pitch and roll correctly
   start with one servo 
   then incorporate other 
+
+  NEED TO GO OVER ALL THE 270 -> 180 LOGIC WHEN SOBER 
         
 */
 
@@ -87,7 +89,7 @@ Controller PitchController(KP, KI, KD, SETPOINT);
 Controller RollController(KP, KI, KD, SETPOINT);
 
 float ReadServo(byte _analogPin);
-void CalibrateServos();
+void CalibrateServo(Servo _servo, byte _analogPin);
 
 
 void setup() {
