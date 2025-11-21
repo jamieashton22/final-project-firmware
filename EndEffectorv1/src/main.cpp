@@ -1,5 +1,11 @@
 
 /* 
+
+  // FRI 21 NOV THIS NEEDS SOME REAL REWORK - ESPECIALLY CONCERNING SWEEPING ETC
+    e.g reading voltage before doing a sweep - servo takes time to reach its specified value 
+        2/3 logic is completely wrong ( most likely)
+        just go to bed and try again tomorrow ....
+
   Code for just end-effector on its own - to be integrated into overall system when working
 
   NOTE: 0-270 maps to 0-180 with servo.write so multiply by 2/3
@@ -138,8 +144,8 @@ void loop() {
 
   roll_pitch comp_angles = CompFilter(a.acceleration.x,a.acceleration.y, a.acceleration.z, g.gyro.x, g.gyro.y, COMP_ALPHA, dt);
 
-  float newPitchAngle = (3/2) * PitchController.PController(comp_angles.pitch * 180.0/PI);    // CHECK THE 2/3 LOGIC HERE 
-  float newRollAngle = (3/2) * RollController.PController(comp_angles.roll *180/PI);        // convert to deg 
+  float newPitchAngle = (2.0/3.0) * PitchController.PController(comp_angles.pitch * 180.0/PI);    // CHECK THE 2/3 LOGIC HERE 
+  float newRollAngle = (2.0/3.0) * RollController.PController(comp_angles.roll *180/PI);        // convert to deg 
 
   float curr_pitch_position = ReadServo(PITCHFEEDBACKPIN);
   float curr_roll_position = ReadServo(ROLLFEEDBACKPIN);
