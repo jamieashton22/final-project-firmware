@@ -27,6 +27,13 @@ typedef struct IMU_values {     // data type to store raw IMU values
 
 };
 
+typedef struct servo_positions {
+
+    float roll_position;
+    float pitch_position;
+
+};
+
 class EndEffector{
 
     private:
@@ -38,13 +45,33 @@ class EndEffector{
         Adafruit_MPU6050 imu;
         float prev_roll;
         float prev_pitch;
+    
+        int roll_feedback_pin;
+        int pitch_feedback_pin;
+
+        float angle_max;
+        float angle_min;
+
+        float roll_v_min;    // minimum voltage from calibration
+        float roll_v_max;     // max voltage from calibration
+        float pitch_v_min;
+        float pitch_v_max;
+
+
 
     public:
 
-        EndEffector(int _roll_pin, int _pitch_pin);
+        EndEffector(int _roll_pin, int _pitch_pin, int _roll_feedback_pin, int _pitch_feedback_pin);
         void EndEffectorSetup();
+
         roll_pitch CompFilter(IMU_values _imu_reading, float _alpha, float _delta_t);
         IMU_values getRawIMU();
+        String GetIMUMessage(float _alpha,float _dt);
+
+        void CalibrateFeedback();   // to calibrate the analogue feedback from servos
+        servo_positions ReadServos();
+
+        void writeEEServos(int _roll_write, int _pitch_write);
 
 };
 

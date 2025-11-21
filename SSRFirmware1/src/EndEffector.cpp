@@ -1,11 +1,13 @@
 #include "EndEffector.h"
 
-EndEffector::EndEffector(int _roll_pin, int _pitch_pin){
+EndEffector::EndEffector(int _roll_pin, int _pitch_pin, int _roll_feedback_pin, int _pitch_feedback_pin){
 
     roll_pin = _roll_pin;
     pitch_pin = _pitch_pin;
     prev_roll = 0.0;
     prev_pitch = 0.0;
+    roll_feedback_pin = _roll_feedback_pin;
+    pitch_feedback_pin = _pitch_feedback_pin;
 
 }
 
@@ -38,32 +40,6 @@ void EndEffector::EndEffectorSetup(){       // setup function
 
 }   
 
-// roll_pitch EndEffector::CompFilter(float _ax,float _ay, float _az, float _wx, float _wy, float alpha, float delta_t){   // return sensor fusion values
-
-
-//    //first convert ax and ay to angles
-//   // roll is about x axis, pitch is about y
-//   float roll_acc = (atan2(_ay,_az));
-//   float pitch_acc = atan2(-1*_ax, sqrt(pow(_ay,2) + pow(_az,2)));
-
-//   // need to store previous angle x and previous angle y and previous angle z
-//   float roll_gyro = prev_roll + (_wx * delta_t);
-//   float pitch_gyro = prev_pitch + (_wy * delta_t);
-
-//   float comp_roll = (alpha * roll_gyro) + ((1-alpha)*roll_acc);
-//   float comp_pitch = (alpha * pitch_gyro) + ((1-alpha)* pitch_acc);
-
-//   roll_pitch _roll_pitch;
-//   _roll_pitch.roll = comp_roll;
-//   _roll_pitch.pitch = comp_pitch;
-
-//   prev_roll = comp_roll;
-//   prev_pitch = comp_pitch;   // update the old roll & pitch with filtered values 
-
-//   return _roll_pitch;
-
-
-// }
 
 roll_pitch EndEffector::CompFilter(IMU_values _imu_reading, float _alpha, float _delta_t){
 
@@ -80,8 +56,8 @@ roll_pitch EndEffector::CompFilter(IMU_values _imu_reading, float _alpha, float 
   float comp_pitch = (_alpha * pitch_gyro) + ((1-_alpha)* pitch_acc);
 
   roll_pitch _roll_pitch;
-  _roll_pitch.roll = comp_roll;
-  _roll_pitch.pitch = comp_pitch;
+  _roll_pitch.roll = comp_roll * (180/PI);
+  _roll_pitch.pitch = comp_pitch * (180/PI);
 
   prev_roll = comp_roll;
   prev_pitch = comp_pitch;   // update the old roll & pitch with filtered values 
@@ -108,3 +84,61 @@ IMU_values EndEffector::getRawIMU(){
     return(IMU_reading);
 
 }
+
+String EndEffector::GetIMUMessage(float _alpha,float _dt){
+
+    //get raw 
+    IMU_values raw_IMU_reading = getRawIMU();
+        // filter it
+    roll_pitch fused_IMU_reading = CompFilter(raw_IMU_reading,_alpha, _dt);
+    String imuMessage = String(fused_IMU_reading.roll, 3) + "," + String(fused_IMU_reading.pitch, 3);   // convert to string for sending
+
+    return(imuMessage);
+
+
+}
+
+void EndEffector::CalibrateFeedback(){
+
+    // obtain max values
+    roll_servo.write(angle_max);
+    pitch_servo.write(angle_max);
+    delay(100);
+    roll_v_max = analogRead(roll_feedback_pin);
+    pitch_v_max = analogRead(pitch_feedback_pin);
+    
+
+    // obtain min values
+
+    roll_servo.write(angle_min);
+    pitch_servo.write(angle_min);
+    delay(100);
+    roll_v_min = analogRead(roll_feedback_pin);
+    pitch_v_min = analogRead(pitch_feedback_pin);
+
+
+}
+
+servo_positions EndEffector::ReadServos(){
+
+    servo_positions current_positions;
+    float roll_voltage = analogRead(roll_feedback_pin);
+    float pitch_voltage = analogRead(pitch_feedback_pin);
+
+    // normalise the read voltage and convert to an angle
+    current_positions.roll_position = ((roll_voltage - roll_v_min)/(roll_v_max - roll_v_min))*(angle_max - angle_min);  
+    current_positions.pitch_position = (pitch_voltage - pitch_v_min)/(pitch_v_max - pitch_v_min)*(angle_max-angle_min);
+
+    return(current_positions);
+
+}
+
+void EndEffector::writeEEServos(int _roll_write, int _pitch_write){
+
+    roll_servo.write(_roll_write);
+    pitch_servo.write(_pitch_write);
+
+    // maybe delay 
+
+}
+
