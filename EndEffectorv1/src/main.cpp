@@ -6,15 +6,16 @@
 #include <Servo.h>
 #include "Controller.h"
 
-#define COMP_ALPHA 0.99  
+#define COMP_ALPHA 0.96
 #define ROLL_PIN 3
-
-#define ROLLFEEDBACKPIN A1
+#define PITCH_PIN 2
 
 #define ROLLSETPOINT 80
+#define PITCHSETPOINT 80
 
 Adafruit_MPU6050 mpu;
 Servo RollServo;
+Servo PitchServo;
 
 float prev_roll = 0.0;
 float prev_pitch = 0.0;
@@ -25,7 +26,6 @@ float initial_pitch = 0.0;
 unsigned long prevTime = 0;
 float dt = 0.0;
 
-
 typedef struct roll_pitch {
   float roll;
   float pitch;
@@ -34,7 +34,7 @@ typedef struct roll_pitch {
 roll_pitch CompFilter(float _ax, float _ay, float _az, float _wx, float _wy, float alpha, float delta_t);
 
 void setup() {
-  pinMode(ROLLFEEDBACKPIN, INPUT);
+
   Serial.begin(9600);
   
   // Wait for serial to be ready
@@ -52,6 +52,7 @@ void setup() {
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
 
   RollServo.attach(ROLL_PIN);
+  PitchServo.attach(PITCH_PIN);
 
   prevTime = micros();
   
@@ -81,14 +82,12 @@ void setup() {
 
     float roll_deg = comp_angles.roll * 180.0/PI;
     float newRollAngle = ROLLSETPOINT - (0.67f * roll_deg);
-    // Serial.println(" Roll from IMU");
-    // Serial.println(1.5 * roll_deg);
-    // Serial.println("New servo angle ");
-    // Serial.println(newRollAngle);
-    // Serial.println("Rounded: ");
-    // Serial.println(round(newRollAngle));
+
+    float pitch_deg = comp_angles.pitch * 180.0/PI;
+    float newPitchAngle = PITCHSETPOINT + (0.67f * pitch_deg);
 
     RollServo.write(round(newRollAngle));
+    PitchServo.write(round(newPitchAngle));
 
     delay(10);
   }
