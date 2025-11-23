@@ -18,7 +18,7 @@ float Controller::PController(float _measurement){
     float output = (90 + (kp * error));
   
   return(output);
-
+    
 }
 
 float Controller::PIController(float _measurement){

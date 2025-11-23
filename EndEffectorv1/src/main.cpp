@@ -6,16 +6,12 @@
 #include <Servo.h>
 #include "Controller.h"
 
-#define COMP_ALPHA 0.94  // Reduced from 0.94
+#define COMP_ALPHA 0.99  
 #define ROLL_PIN 3
-#define HARD_ROLL_SETPOINT 0
-
-#define KP 0.5 // Reduced from 1.0
-#define KI 0          
-#define KD 0
-#define SETPOINT 0.0
 
 #define ROLLFEEDBACKPIN A1
+
+#define ROLLSETPOINT 80
 
 Adafruit_MPU6050 mpu;
 Servo RollServo;
@@ -26,14 +22,9 @@ float prev_pitch = 0.0;
 float initial_roll = 0.0;
 float initial_pitch = 0.0;
 
-float pitch_setpoint = 0.0;
-float roll_setpoint = 0.0;
-
 unsigned long prevTime = 0;
 float dt = 0.0;
 
-float minV = 0.0;
-float maxV = 0.0;
 
 typedef struct roll_pitch {
   float roll;
@@ -41,8 +32,6 @@ typedef struct roll_pitch {
 };
 
 roll_pitch CompFilter(float _ax, float _ay, float _az, float _wx, float _wy, float alpha, float delta_t);
-Controller RollController(KP, KI, KD, SETPOINT);
-
 
 void setup() {
   pinMode(ROLLFEEDBACKPIN, INPUT);
@@ -63,18 +52,9 @@ void setup() {
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
 
   RollServo.attach(ROLL_PIN);
-  
-  // Move servo to neutral position
-  Serial.println("Moving servo to neutral position (90)...");
-  RollServo.write(90);
-  delay(2000);  // Give servo time to reach position
-  
-  prev_roll = initial_roll;
-  prev_pitch = initial_pitch;
-  
+
   prevTime = micros();
   
-  Serial.println("Setup complete! Starting main loop...\n");
 }
 
 
@@ -100,14 +80,15 @@ void setup() {
     );
 
     float roll_deg = comp_angles.roll * 180.0/PI;
-    float newRollAngle = RollController.PDController(roll_deg, dt);
-    
-    RollServo.write(newRollAngle);
-    
-    // Debug output
-    Serial.print("Roll: "); Serial.print(roll_deg);
-    Serial.print(" | Command: "); Serial.print(newRollAngle);
-    Serial.print(" | dt: "); Serial.println(dt, 4);
+    float newRollAngle = ROLLSETPOINT - (0.67f * roll_deg);
+    // Serial.println(" Roll from IMU");
+    // Serial.println(1.5 * roll_deg);
+    // Serial.println("New servo angle ");
+    // Serial.println(newRollAngle);
+    // Serial.println("Rounded: ");
+    // Serial.println(round(newRollAngle));
+
+    RollServo.write(round(newRollAngle));
 
     delay(10);
   }

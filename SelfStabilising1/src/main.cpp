@@ -12,12 +12,12 @@
 #define PITCH_PIN 10
 #define ROLL_PIN 9
 #define HARD_PITCH_SETPOINT -3 // temporary hard coded setpoint
-#define HARD_ROLL_SETPOINT 
+#define HARD_ROLL_SETPOINT                
 
 #define KP 1
 #define KI 0
 #define KD 0
-#define SETPOINT 0
+#define SETPOINT 0 
 
 Adafruit_MPU6050 mpu;
 Servo PitchServo;
@@ -103,7 +103,7 @@ void loop() {
   PitchServo.write(newPitchAngle);
   RollServo.write(newRollAngle);
 
-delay(10);
+// delay(10);
 
 // // ======= SERVO TESTING CODE =========
 
