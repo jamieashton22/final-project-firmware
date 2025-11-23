@@ -16,13 +16,9 @@ float Controller::PController(float _measurement){
 
     float error = setpoint - _measurement;
     
-    // // Noise deadband
-    // if (abs(error) < 2) error = 0;
     
-    // Control output: center point is 90 (which is 135° physical)
     float servoCommand = 90.0 + (kp * error);
     
-    // Clamp to library range
     servoCommand = constrain(servoCommand, 0.0, 180.0);
     
     return servoCommand;
@@ -65,10 +61,8 @@ float Controller::PIController(float _measurement){
 }
 
 float Controller::PDController(float _measurement, float _dt){
-    float error = setpoint - _measurement;
     
-    // Noise deadband
-    if (abs(error) < 2) error = 0;
+    float error = setpoint - _measurement;
     
     // Derivative term (rate of change of error)
     float d_error = (error - prev_error) / _dt;  // You need dt passed in!
