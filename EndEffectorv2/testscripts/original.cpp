@@ -16,11 +16,6 @@
   for servo 2: Vmin = 0.23V, Vmax = 3.03V, V90 = 1.63V
   identical so can use same Vmin and Vmax
 
-
-  THIS ISNT WORKING - 
-  - calibrate servos in setup - done
-  - calibrate IMU in setup
-
 */
 
 
@@ -33,20 +28,17 @@
 
 #define PITCH_PIN 3
 #define ROLL_PIN 2
-#define PITCH_FBACK A1
-#define ROLL_FBACK A0
+#define PITCH_FBACK A0
+#define ROLL_FBACK A1
 
 #define COMP_ALPHA 0.96
 
+#define V_MAX 3.03
+#define V_MIN 0.22
 #define SERVO_RANGE 180.0
 
 #define ROLLSETPOINT 80
 #define PITCHSETPOINT 80
-
-#define SERVO_TOLERANCE 5.0
-#define STABILITY_THRESHOLD 3.0;  // ignore small tilts
-
-#define SERVO_UPDATE_RATE 100 // 100 ms between control updates
 
 struct roll_pitch {
   float roll;
@@ -61,27 +53,21 @@ roll_pitch ReadIMU();
 
 // FOR CALIBRATION OF VMIN AND VMAX
 float reading_raw_adc = 0.0; // temp for debug
-float v_max = 3.07;
-float v_min = 0.22; // temp hardcode
 
 float prev_roll = 0.0;
 float prev_pitch = 0.0;
 
-roll_pitch initial_roll_pitch;
-
 float initial_roll = 0.0;
 float initial_pitch = 0.0;
 
-unsigned long imuPrevTime = 0.0;
-unsigned long servoPrevTime = 0.0;
-float dt_imu = 0.05;
+unsigned long prevTime = 0;
+float dt = 0.0;
 
 bool servo_reached = false;   // flag whether servos reached target 
-bool servo_time_passed = false;
 
 float roll_deg = 0.0;
 float pitch_deg = 0.0;
-float roll_write = 90.0;
+int roll_write = 0;
 int pitch_write = 0;
 
 int roll_servo_true = 0;
@@ -99,22 +85,7 @@ void setup(){
 
   // Wait for serial to be ready
   while(!Serial) delay(10);
-
-  // calibrating servo feedback
-
-  // Serial.println("Calibrating servo feedback");
-  // v_max = calibrateServo(rollServo, 180, ROLL_FBACK);
-  // delay(100);
-  // Serial.println("v max = ");
-  // Serial.println(v_max);
-  // v_min = calibrateServo(rollServo, 0, ROLL_FBACK);
-  // delay(100);
-  // Serial.println("v min = ");
-  // Serial.println(v_min);
-  // delay(100);
   
-  // set up IMU 
-
   Serial.println("Initializing MPU6050...");
   if (!mpu.begin()) {
     Serial.println("MPU6050 not detected. Check wiring!");
@@ -126,23 +97,11 @@ void setup(){
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
 
-  // move servos to center position and wait 
+  roll_servo_true = 90;
   rollServo.write(90);
-  delay(1000);
-  Serial.println("Moving servo to centre position, true value = ");
-  Serial.println(readServo(rollServo, ROLL_FBACK));
+  roll_write = 90;
 
-  // calibrate IMU
-
-  Serial.println("Calibrating IMU");
-  initial_roll_pitch = ReadIMU();
-  delay(1000);
-  Serial.println(" Initial roll: ");
-  Serial.println((initial_roll_pitch.roll) * 180.0/PI);
-  Serial.println("Initial pitch: ");
-  Serial.println((initial_roll_pitch.pitch) * 180.0/PI);
-
-  imuPrevTime = micros();
+  prevTime = micros();
 
 
 }
@@ -150,116 +109,87 @@ void setup(){
 
 void loop() {
 
-// // ======   MAIN CODE =====================================================
+// ======   MAIN CODE =====================================================
 
-  // calculate dt for IMU timing 
+  // calculate dt for specific loop 
   unsigned long currTime = micros();
-  dt_imu = (currTime - imuPrevTime)/ 1000000.0;
-  imuPrevTime = currTime; 
-  if(dt_imu > 0.05){
-    dt_imu = 0.05;          // cap at 50ms -- TWEAK
+  dt = (currTime - prevTime)/ 1000000.0;
+  prevTime = currTime; 
+  if(dt > 0.05){
+    dt = 0.05;          // cap at 50ms -- TWEAK
   }
 
-  // roll_pitch curr_imu_reading = ReadIMU();
-
-  // calculate dt for servo timing
-
-  unsigned long currTimeServo = millis();
-  if(currTimeServo - servoPrevTime >= SERVO_UPDATE_RATE){
-
-    servoPrevTime = currTimeServo;
-    servo_time_passed = true;
-
-  }
-  else { servo_time_passed = false;}
+  // read servo
+  // if servo_true = servo_written set servo reached to true, else delay or else break?
 
   roll_servo_true = readServo(rollServo, ROLL_FBACK);
-  Serial.println(" roll_servo_true : ");
-  Serial.println(roll_servo_true);
 
-  Serial.println("roll_write is ");
+  Serial.println("roll_servo_true: ");
+  Serial.println(roll_servo_true);
+  Serial.println("roll write at beginning of loop : ");
   Serial.println(roll_write);
-  
-  if(abs(roll_servo_true - round(roll_write)) <= SERVO_TOLERANCE){  // if servo has reached commanded position within certain threshold (tweak)
+
+
+  if(abs(roll_servo_true - roll_write) <= 2){  // if servo has reached commanded position within certain threshold (tweak)
     
-    servo_reached = true;
+      servo_reached = true;
   
-  }
+   }
 
   else{
     servo_reached = false; 
   }
 
-  // only update if servos have reached, and enough time passed
+  if(servo_reached == true){
 
-  if(servo_reached == true && servo_time_passed == true){ // MAIN IF STATEMENT
+    roll_pitch curr_IMU_reading = ReadIMU();
 
-    roll_pitch curr_imu_reading = ReadIMU();
-    roll_deg = curr_imu_reading.roll * 180.0/PI;
-    pitch_deg = curr_imu_reading.pitch * 180.0/PI;
+    roll_deg = curr_IMU_reading.roll * 180.0/PI;
+    pitch_deg = curr_IMU_reading.pitch * 180.0/PI;
 
-    if(abs(roll_deg) > 3.0){ // deadband
+    roll_write = 90 - (roll_deg);     // TWEAK
+    roll_write = constrain(roll_write, 0, 180);
+    rollServo.write(round(roll_write));               // write the new angle
 
-      // write new angle 
-      roll_write = 90.0 - (roll_deg);     // TWEAK
-      roll_write = constrain(roll_write, 0, 180);
-      rollServo.write(round(roll_write)); 
-      
-    }
-
-
-    servoPrevTime = currTimeServo;
-
-    // for debug: 
-   
-    Serial.print("Corrected - Roll: "); Serial.print(roll_deg);
-    Serial.print("° → Cmd: "); Serial.print(roll_write);
-    Serial.print(" | Pitch: "); Serial.print(pitch_deg);
-    Serial.print("° → Cmd: "); Serial.println(pitch_write);
+    servo_reached = false;              // set flag to false
 
   }
 
-  delay(10);
+// rollServo.write(90);
+// delay(1000);
+// rollServo.write(0);
+// delay(1000);
 
-// // ===222222=============== TEST CODES ============================================
+// ===222222=============== TEST CODES ============================================
 
-//   // // FOR CALIBRATION OF VMIN AND VMAX
+  // // FOR CALIBRATION OF VMIN AND VMAX
 
-//   // float v_for_calib = 0.0;
-//   // v_for_calib = calibrateServo(servo1, 90, FEEDBACK_1);
-//   // Serial.println("Raw Reading = ");
-//   // Serial.println(reading_raw_adc);
-//   // Serial.println("V min = ");
-//   // Serial.println(v_for_calib);
+  // float v_for_calib = 0.0;
+  // v_for_calib = calibrateServo(servo1, 90, FEEDBACK_1);
+  // Serial.println("Raw Reading = ");
+  // Serial.println(reading_raw_adc);
+  // Serial.println("V min = ");
+  // Serial.println(v_for_calib);
 
 
   // // FOR TESTING READSERVO 
-  // rollServo.write(90);   // write to 90 to test
+  // servo1.write(90);   // write to 90 to test
   // delay(1000);        // delay -allow to reach
-  // int curr_pos = readServo(rollServo, ROLL_FBACK);
+  // int curr_pos = readServo(servo1, FEEDBACK_1);
   // Serial.println("Wrote servo to 90, actual angle = ");
   // Serial.println(curr_pos);
 
-  // rollServo.write(120);   // write to 120 to test
+  // servo1.write(120);   // write to 120 to test
   // delay(1000);        // delay -allow to reach
-  // curr_pos = readServo(rollServo, ROLL_FBACK);
+  // curr_pos = readServo(servo1, FEEDBACK_1);
   // Serial.println("Wrote servo to 120, actual angle = ");
   // Serial.println(curr_pos);
 
-  // rollServo.write(45);   // write to 90 to test
+  // servo1.write(45);   // write to 90 to test
   // delay(1000);        // delay -allow to reach
-  // curr_pos = readServo(rollServo, ROLL_FBACK);
+  // curr_pos = readServo(servo1, FEEDBACK_1);
   // Serial.println("Wrote servo to 45, actual angle = ");
   // Serial.println(curr_pos);
-
-
-  // // FOR TESTING IMU
-  // roll_pitch current_imu_reading = ReadIMU();
-  // delay(100);
-  // Serial.println(" loop roll: ");
-  // Serial.println((current_imu_reading.roll) * 180.0/PI);
-  // Serial.println("loop pitch: ");
-  // Serial.println((current_imu_reading.pitch) * 180.0/PI);
   
 
 
@@ -273,6 +203,7 @@ float calibrateServo(Servo &_servo, int _pos, int _feedbackpin){
 
   delay(1000);        // wait a second to allow servo to reach position
 
+  reading_raw_adc = analogRead(_feedbackpin);
   v_calib = ((analogRead(_feedbackpin)) * 5.0)/1023.0;
 
   return(v_calib);
@@ -282,8 +213,8 @@ float calibrateServo(Servo &_servo, int _pos, int _feedbackpin){
 int readServo(Servo &_servo, int _feedbackpin){   // use of & prevents copies, pass by reference 
 
   float v_meas = ((analogRead(_feedbackpin))*5.0/1023.0 );
-  float normalised_pos = (v_meas - v_min)/(v_max- v_min);
-  normalised_pos = constrain(normalised_pos, 0.0, 1.0);
+  float normalised_pos = (v_meas - V_MIN)/(V_MAX - V_MIN);
+  normalised_pos = constrain(normalised_pos, 0.0, 1.1);
 
   int angle_read = int(normalised_pos * SERVO_RANGE);
 
@@ -304,7 +235,7 @@ roll_pitch ReadIMU(){
       g.gyro.x, 
       g.gyro.y, 
       COMP_ALPHA, 
-      dt_imu
+      dt
     );
 
     return (comp_angles);     // returns radians
@@ -317,7 +248,7 @@ roll_pitch CompFilter(float _ax, float _ay, float _az, float _wx, float _wy, flo
   float roll_acc = atan2(_ay, _az);
   float pitch_acc = atan2(-_ax, sqrt(pow(_ay, 2) + pow(_az, 2)));
 
-  // Gyro integration
+  // Gyro integration WITH CALIBRATION OFFSETS APPLIED
   float roll_gyro = prev_roll + (_wx * delta_t);
   float pitch_gyro = prev_pitch + (_wy * delta_t);
 
