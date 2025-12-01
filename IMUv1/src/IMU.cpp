@@ -169,3 +169,82 @@ roll_pitch IMU::CompFilter(raw_imu_vals _raw_calib_imu_vals, float _alpha, float
 
     return(_roll_pitch);
 }
+
+
+    
+// comp filter with accelerometer reconditioning
+
+roll_pitch IMU::CompFilterv2(raw_imu_vals _v, float _alpha, float _delta_t){
+
+    // get accel based angles
+    float roll_acc = atan2(_v.ay, _v.az);
+    float pitch_acc = atan2(-_v.ax, sqrt(_v.ay*_v.ay + _v.az * _v.az));
+
+    // gyro integration
+    float roll_gyro = prev_roll + _v.wx * _delta_t;
+    float pitch_gyro = prev_pitch + _v.wy * _delta_t;
+
+    // accel reconditioning 
+
+    // get accel magnitude
+    float acc_mag_raw = sqrt(_v.ax * _v.ax + _v.ay*_v.ay + _v.az*_v.az);
+
+    // smooth using EMA
+    static float acc_mag_filt = 9.81f; // start near gravity g 
+    acc_mag_filt = 0.1f * acc_mag_raw + 0.9f * acc_mag_filt;
+
+    // thresholds -- TWEAK
+    const float ENTER_LO = 8.3f;   // must be VERY close to 1g to re-enter
+    const float ENTER_HI = 10.6f;
+    const float EXIT_LO  = 7.8f;   // more tolerant window to exit
+    const float EXIT_HI  = 11.5f;
+
+    // gyro angular rate threshold
+    const float GYRO_THR = 0.04f; 
+
+    // accel valid flaf
+    static bool accel_valid = true; 
+    
+    if(accel_valid) {
+
+        // stop trusting accel if ...
+        if (acc_mag_filt <EXIT_LO || acc_mag_filt > EXIT_HI || fabs(_v.wx) > GYRO_THR || fabs(_v.wy) > GYRO_THR){
+
+
+            accel_valid = false;
+        }
+        }
+
+    else {  
+
+            // start trusting accel if 
+
+            if (acc_mag_filt > ENTER_LO && acc_mag_filt < ENTER_HI && fabs(_v.wx) < GYRO_THR && fabs(_v.wy) < GYRO_THR){
+
+
+                accel_valid = true;
+            }
+
+        }
+
+        // comp filter now 
+        float comp_roll, comp_pitch;
+
+        if (accel_valid) {
+        // normal complementary filter
+        comp_roll  = _alpha * roll_gyro  + (1.0f - _alpha) * roll_acc;
+        comp_pitch = _alpha * pitch_gyro + (1.0f - _alpha) * pitch_acc;
+        } else {
+            // only gyro while accel unreliable
+            comp_roll  = roll_gyro;
+            comp_pitch = pitch_gyro;
+        }
+
+
+    prev_roll = comp_roll; //for next iteration
+    prev_pitch = comp_pitch;
+
+    roll_pitch output = { comp_roll, comp_pitch};
+    return output;
+
+}

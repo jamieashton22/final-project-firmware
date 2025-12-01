@@ -6,11 +6,34 @@ FOR TESTING:
 3 - tweak and test accel range, gyro range and bandwidth in setup method 
 4 - Can get raw offsets before calibration (should be all zero)
 5 - Can get raw offsets after calibration 
+6 - TEST improved comp filter
 
 NOTE 
 // dt needs to be in seconds when passed into the compfilter
 // filter output is currently in radians, convert before passing/printing
+// look into ACCELEROMETER RECONDITIONING
 
 */
 
+#include <Arduino.h>
+
 #define COMP_FILTER_ALPHA 0.96
+
+
+
+void setup() {
+
+
+
+
+
+}
+
+
+
+void loop() {
+
+
+
+
+}

@@ -41,7 +41,7 @@ class IMU {
 
 
     public: 
-    
+
     // constructor 
     IMU(Adafruit_MPU6050 _mpu);
 
@@ -69,7 +69,8 @@ class IMU {
     // complementary filter method 
     roll_pitch CompFilter(raw_imu_vals _raw_calib_imu_vals, float _alpha, float _delta_t);
 
-
+    // more advanced comp filter with accelerometer reconditioning
+    roll_pitch CompFilterv2(raw_imu_vals _v, float _alpha, float _delta_t);
 
 };
 
