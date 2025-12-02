@@ -43,13 +43,13 @@
 
 #define SERVO_RANGE 180.0
 
-#define ROLLSETPOINT 90
-#define PITCHSETPOINT 90
+#define ROLLSETPOINT 80
+#define PITCHSETPOINT 80
 
-#define SERVO_TOLERANCE 3.0
-#define STABILITY_THRESHOLD 10.0;  // ignore small tilts
+#define SERVO_TOLERANCE 5.0
+#define STABILITY_THRESHOLD 3.0;  // ignore small tilts
 
-#define SERVO_UPDATE_RATE  10.0// 100 ms between control updates
+#define SERVO_UPDATE_RATE 100 // 100 ms between control updates
 
 struct roll_pitch {
   float roll;
@@ -152,63 +152,120 @@ void setup(){
 
 
 void loop() {
-  // Calculate dt for IMU timing
+
+// // ======   MAIN CODE =====================================================
+
+  // calculate dt for IMU timing 
   unsigned long currTime = micros();
-  dt_imu = (currTime - imuPrevTime) / 1000000.0;
-  imuPrevTime = currTime;
-  if(dt_imu > 0.05) {
-    dt_imu = 0.05;
+  dt_imu = (currTime - imuPrevTime)/ 1000000.0;
+  imuPrevTime = currTime; 
+  if(dt_imu > 0.05){
+    dt_imu = 0.05;          // cap at 50ms -- TWEAK
   }
 
-  // Calculate servo timing
+  // roll_pitch curr_imu_reading = ReadIMU();
+
+  // calculate dt for servo timing
+
   unsigned long currTimeServo = millis();
-  if(currTimeServo - servoPrevTime >= SERVO_UPDATE_RATE) {
+  if(currTimeServo - servoPrevTime >= SERVO_UPDATE_RATE){
+
+    servoPrevTime = currTimeServo;
     servo_time_passed = true;
-  } else {
-    servo_time_passed = false;
-  }
 
-  // Read servo position
+  }
+  else { servo_time_passed = false;}
+
   roll_servo_true = readServo(rollServo, ROLL_FBACK);
+  Serial.println(" roll_servo_true : ");
+  Serial.println(roll_servo_true);
+
+  Serial.println("roll_write is ");
+  Serial.println(roll_write);
   
-  // Check if servo settled
-  if(abs(roll_servo_true - round(roll_write)) <= SERVO_TOLERANCE) {
+  if(abs(roll_servo_true - round(roll_write)) <= SERVO_TOLERANCE){  // if servo has reached commanded position within certain threshold (tweak)
+    
     servo_reached = true;
-  } else {
-    servo_reached = false;
+  
   }
 
-  // ONLY update when conditions met
-  if(servo_reached && servo_time_passed) {
-    servoPrevTime = currTimeServo;  // Reset timer
-    
-    // Read IMU - safe now!
+  else{
+    servo_reached = false; 
+  }
+
+  // only update if servos have reached, and enough time passed
+
+  if(servo_reached == true && servo_time_passed == true){ // MAIN IF STATEMENT
+
     roll_pitch curr_imu_reading = ReadIMU();
-    roll_deg = curr_imu_reading.roll * 180.0 / PI;
-    pitch_deg = curr_imu_reading.pitch * 180.0 / PI;
+    roll_deg = curr_imu_reading.roll * 180.0/PI;
+    pitch_deg = curr_imu_reading.pitch * 180.0/PI;
 
-    // Apply deadband
-    if(abs(roll_deg) > 2.0) {
-      // Gentler control with 0.6 gain
-      float roll_correction = 0.6 * roll_deg;
+    if(abs(roll_deg) > 3.0){ // deadband
 
-      roll_write = roll_servo_true - roll_correction;
-      // roll_write = 90.0 - (1.2 * roll_deg);
-      roll_write = constrain(roll_write, 30, 150);  // Safe limits
-      rollServo.write(round(roll_write));
+      // write new angle 
+      roll_write = 90.0 - (roll_deg);     // TWEAK
+      roll_write = constrain(roll_write, 0, 180);
+      rollServo.write(round(roll_write)); 
       
-      Serial.print("Correcting - Roll: ");
-      Serial.print(roll_deg, 2);
-      Serial.print("° → Servo: ");
-      Serial.println(roll_write, 1);
-    } else {
-      Serial.println("Level - no correction needed");
     }
-    
-    servo_reached = false;  // Mark as not settled (new command sent)
+
+
+    servoPrevTime = currTimeServo;
+
+    // for debug: 
+   
+    Serial.print("Corrected - Roll: "); Serial.print(roll_deg);
+    Serial.print("° → Cmd: "); Serial.print(roll_write);
+    Serial.print(" | Pitch: "); Serial.print(pitch_deg);
+    Serial.print("° → Cmd: "); Serial.println(pitch_write);
+
   }
 
   delay(10);
+
+// // ===222222=============== TEST CODES ============================================
+
+//   // // FOR CALIBRATION OF VMIN AND VMAX
+
+//   // float v_for_calib = 0.0;
+//   // v_for_calib = calibrateServo(servo1, 90, FEEDBACK_1);
+//   // Serial.println("Raw Reading = ");
+//   // Serial.println(reading_raw_adc);
+//   // Serial.println("V min = ");
+//   // Serial.println(v_for_calib);
+
+
+  // // FOR TESTING READSERVO 
+  // rollServo.write(90);   // write to 90 to test
+  // delay(1000);        // delay -allow to reach
+  // int curr_pos = readServo(rollServo, ROLL_FBACK);
+  // Serial.println("Wrote servo to 90, actual angle = ");
+  // Serial.println(curr_pos);
+
+  // rollServo.write(120);   // write to 120 to test
+  // delay(1000);        // delay -allow to reach
+  // curr_pos = readServo(rollServo, ROLL_FBACK);
+  // Serial.println("Wrote servo to 120, actual angle = ");
+  // Serial.println(curr_pos);
+
+  // rollServo.write(45);   // write to 90 to test
+  // delay(1000);        // delay -allow to reach
+  // curr_pos = readServo(rollServo, ROLL_FBACK);
+  // Serial.println("Wrote servo to 45, actual angle = ");
+  // Serial.println(curr_pos);
+
+
+  // // FOR TESTING IMU
+  // roll_pitch current_imu_reading = ReadIMU();
+  // delay(100);
+  // Serial.println(" loop roll: ");
+  // Serial.println((current_imu_reading.roll) * 180.0/PI);
+  // Serial.println("loop pitch: ");
+  // Serial.println((current_imu_reading.pitch) * 180.0/PI);
+  
+
+
 }
 
 float calibrateServo(Servo &_servo, int _pos, int _feedbackpin){

@@ -6,12 +6,12 @@
 #include <Servo.h>
 #include "Controller.h"
 
-#define COMP_ALPHA 0.96
+#define COMP_ALPHA 0.94
 #define ROLL_PIN 3
 #define PITCH_PIN 2
 
-#define ROLLSETPOINT 80
-#define PITCHSETPOINT 80
+#define ROLLSETPOINT 90
+#define PITCHSETPOINT 90
 
 Adafruit_MPU6050 mpu;
 Servo RollServo;
@@ -81,12 +81,21 @@ void setup() {
     );
 
     float roll_deg = comp_angles.roll * 180.0/PI;
-    float newRollAngle = ROLLSETPOINT - (0.67f * roll_deg);
+    float currentServoReading = RollServo.read();
+    float newRollAngle = currentServoReading + (2.0 * roll_deg);
 
     float pitch_deg = comp_angles.pitch * 180.0/PI;
-    float newPitchAngle = PITCHSETPOINT + (0.67f * pitch_deg);
+    float newPitchAngle = PITCHSETPOINT + (pitch_deg);
 
-    RollServo.write(round(newRollAngle));
+    Serial.print("roll deg: ");
+    Serial.print(roll_deg);
+    Serial.print(" pitch deg: ");
+    Serial.print(pitch_deg);
+    Serial.print(" new roll angle: ");
+    Serial.println((constrain(round(newRollAngle), 60, 120)));
+    
+
+    RollServo.write(constrain(round(newRollAngle), 60, 120));
     PitchServo.write(round(newPitchAngle));
 
     delay(10);
