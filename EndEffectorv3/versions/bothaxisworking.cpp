@@ -3,9 +3,9 @@
 finally have some functionality 
 
 TODO:
-- add core functionality
+- add core functionality        -- DONE
 - test just pitch   -- working 
-- get working with both axis and film 
+- get working with both axis and film   -- DONE 
 - write/add PID controller
 - add and use improved IMU class
 - move servo functionality into seperate class 
