@@ -23,8 +23,8 @@ void IMU::SetupIMU(){
     // zero offsets 
     SetRawOffsets(0.0,0.0,0.0,0.0,0.0);
 
-    Serial.println(" 8 second delay to let IMU warm up");
-    delay(8000);
+    Serial.println(" 2 second delay to let IMU warm up");
+    delay(2000);
 
     // calibrate IMU
     CalibRawOffsets();

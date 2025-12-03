@@ -6,7 +6,7 @@ TODO:
 - test just pitch   -- working 
 - get working with both axis and film   -- DONE 
 - write/add PID controller
-- add and use improved IMU class
+- add and use improved IMU class - DONE
 - move servo functionality into seperate class -- DONE 
 - try without the timing (adapt EEv1)
 
@@ -49,10 +49,14 @@ IMU imu(mpu);
 
 void setup() {
 
+    Serial.begin(9600);
+
     imu.SetupIMU();
+    Serial.println("Setting up servos");
     RollServo.setupServo();
     PitchServo.setupServo();
-
+    // Serial.println("8 second delay");
+    // delay(8000);
     imu_prev_time = micros();
 }
 
@@ -92,20 +96,20 @@ void loop() {
         raw_imu_vals imu_reading_raw = imu.ReadCalibIMU();
         roll_pitch imu_reading_filt = imu.CompFilter(imu_reading_raw, COMP_FILTER_ALPHA, dt_imu);
 
-        RollServo.updateServo(imu_reading_filt.roll);
+        RollServo.updateServo(-(imu_reading_filt.roll) * 180.0/PI);
 
 
     }
 
     // Pitch Update
 
-        if(pitch_time_flag && pitch_pos_flag) {
+    if(pitch_time_flag && pitch_pos_flag) {
 
         // read imu and comp filter
         raw_imu_vals imu_reading_raw = imu.ReadCalibIMU();
         roll_pitch imu_reading_filt = imu.CompFilter(imu_reading_raw, COMP_FILTER_ALPHA, dt_imu);
 
-        PitchServo.updateServo(-(imu_reading_filt.pitch));
+        PitchServo.updateServo((imu_reading_filt.pitch) * 180.0/PI);
 
 
     }

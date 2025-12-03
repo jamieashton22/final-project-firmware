@@ -17,6 +17,7 @@ void ServoController::setupServo(){
 
     servo.attach(signal_pin);
     servo.write(90);
+    servoPrevTime = millis();   // <- MUST HAVE THIS
     delay(1000); // wait a second to let it reach position
 
 }
@@ -41,9 +42,9 @@ int ServoController::readServo(){
   float normalised_pos = (v_meas - v_min)/(v_max- v_min);
   normalised_pos = constrain(normalised_pos, 0.0, 1.0);
 
-  int angle_read = int(normalised_pos * servo_range);
+  servo_true = int(normalised_pos * servo_range);
 
-  return(angle_read);
+  return(servo_true);
 
 
 }
@@ -79,7 +80,7 @@ bool ServoController::servoReachedPosition(int _true_pos){  //pass true position
         servoPrevTime = servoCurrTime;
 
         // apply deadband
-        if(abs(_imu_reading) > 2.0) {
+        if(abs(_imu_reading) > tilt_threshold) {
 
             // CONTROL GOES HERE
             // just with a hardcoded P for now, change this when controller written
