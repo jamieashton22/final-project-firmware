@@ -57,6 +57,7 @@ bool ServoController::servoTimePassed(){
     else{
         servo_time_passed = false;
     }
+    return(servo_time_passed);
 
 }
 
@@ -68,32 +69,10 @@ bool ServoController::servoReachedPosition(int _true_pos){  //pass true position
     else{
         servo_reached = false;
     }
-
+    return(servo_reached);
 }
 
-    /* UPDATE SERVO ------------------------------------------
-    this ones important
-
-    flow in main will be something like
-
-    if (servoTimePassed() && servoReachedPosition()){
-        read IMU
-        pass imu angle into update function and 
-        execute update function
-    }
-
-    and update function will:
-    reset servo timer
-    apply deadband if statement
-    apply the control to the correction (PID)
-    create new roll_write
-    constrain new roll_write
-    write new roll_write 
-
-
-    this means servo curr time needs to be moved into the class not the method 
-    */
-
+    
     void ServoController::updateServo(float _imu_reading){
 
         // reset servo timer
