@@ -9,6 +9,7 @@ ServoController::ServoController(int _signal_pin, int _feedback_pin, float _serv
     update_rate = _update_rate;
     accum_error = 0.0;
     prev_error = 0.0;
+    derivative_filtered = 0.0;  // for derivative filtering
 
 }
 
@@ -159,7 +160,7 @@ float ServoController::PIController(float _setpoint, float _measurement, float _
             }
 
 
-            
+
             float max_accum_error = 20/_ki; // TUNE - set a maximum error contribution
             if(accum_error > max_accum_error) {
                 accum_error = max_accum_error;
@@ -189,17 +190,18 @@ float ServoController::PIController(float _setpoint, float _measurement, float _
 
     }
 
-float ServoController::PDController(float _setpoint, float _measurement, float _kp, float _kd){
+float ServoController::PDController(float _setpoint, float _measurement, float _kp, float _kd, float _alpha){
 
     // calculate error r-y
     float error = _setpoint - _measurement;
 
     //deadband - dont adjust for neglegible titls
-    if(abs(error) < tilt_threshold){
+    if(abs(error) > tilt_threshold){
 
-        float derivative = (error - prev_error) / dt_sec;
+        float derivative_raw = (error - prev_error) / dt_sec;
 
-        float correction = (_kp * error) + (_kd * derivative);
+        derivative_filtered = _alpha * derivative_filtered + (1.0 - _alpha) * derivative_raw;   // LPF the derivative term
+        float correction = (_kp * error) + (_kd * derivative_filtered);
 
         return correction;
 
@@ -212,15 +214,16 @@ float ServoController::PDController(float _setpoint, float _measurement, float _
 
 }
 
-float ServoController::PIDController(float _setpoint, float _measurement, float _kp, float _ki, float _kd){
+float ServoController::PIDController(float _setpoint, float _measurement, float _kp, float _ki, float _kd, float _alpha){
 
     // calculate error = r - y
     float error = _setpoint - _measurement;
 
     //deadband - dont adjust for neglegible titls
-    if(abs(error) < tilt_threshold){
+    if(abs(error) > tilt_threshold){
 
-        float derivative = (error - prev_error) / dt_sec;
+        float derivative_raw = (error - prev_error) / dt_sec;
+        derivative_filtered = _alpha * derivative_filtered + (1.0 - _alpha) * derivative_raw;
 
         accum_error += error * dt_sec;
 
@@ -242,7 +245,7 @@ float ServoController::PIDController(float _setpoint, float _measurement, float 
             }
 
 
-        float correction = (_kp * error) + (_ki * accum_error) + (_kd * derivative);  
+        float correction = (_kp * error) + (_ki * accum_error) + (_kd * derivative_filtered);  
         return(correction);      
 
     }

@@ -26,6 +26,7 @@ class ServoController {
         float dt_sec = 0.0; // dt for controller
         float accum_error; // for I term
         float prev_error;
+        float derivative_filtered; // for D term filtering
 
         // temp hardcoded Vmin and Vmax for servo analogue feedback
         float v_max = 3.07;
@@ -93,10 +94,10 @@ class ServoController {
     float PIController(float _setpoint, float _measurement, float _kp, float _ki);
 
     //PD controller
-    float PDController(float _setpoint, float _measurement, float _kp, float _kd);
+    float PDController(float _setpoint, float _measurement, float _kp, float _kd, float _alpha);
 
     //PID controller
-    float PIDController(float _setpoint, float _measurement, float _kp, float _ki, float _kd);
+    float PIDController(float _setpoint, float _measurement, float _kp, float _ki, float _kd, float _alpha);
 
 };
 

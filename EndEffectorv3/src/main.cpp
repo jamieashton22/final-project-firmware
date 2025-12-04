@@ -26,10 +26,12 @@ NOTE: BOTH AXIS
 #define PITCH_KP 0.4
 #define PITCH_KI 0
 #define PITCH_KD 0
+#define PITCH_ALPHA 0.7
 
 #define ROLL_KP 0.4
-#define ROLL_KI
-#define ROLL_KD
+#define ROLL_KI 0
+#define ROLL_KD 0
+#define ROLL_ALPHA 0.7
 
 // roll servo controller parameters
 #define ROLL_SIGNAL_PIN 2
@@ -128,7 +130,7 @@ void loop() {
         // float correction = PitchServo.PIController(PITCH_SETPOINT, -(imu_reading_filt.pitch) * 180.0/PI, PITCH_KP, PITCH_KI); // feed negative measurement into pitch controller as inverted
 
         // for PD controller
-        // float correction = PitchServo.PDController(PITCH_SETPOINT, -(imu_reading_filt.pitch) * 180.0/PI, PITCH_KP, PITCH_KD); // feed negative measurement into pitch controller as inverted
+        // float correction = PitchServo.PDController(PITCH_SETPOINT, -(imu_reading_filt.pitch) * 180.0/PI, PITCH_KP, PITCH_KD, PITCH_ALPHA); // feed negative measurement into pitch controller as inverted
 
         // for PID controller
         // float correction = PitchServo.PIDController(PITCH_SETPOINT, -(imu_reading_filt.pitch) * 180.0/PI, PITCH_KP,PITCH_KI, PITCH_KD); // feed negative measurement into pitch controller as inverted
