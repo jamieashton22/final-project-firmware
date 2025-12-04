@@ -20,6 +20,16 @@ NOTE: BOTH AXIS
 #include "IMU.h"
 #include "ServoController.h"
 
+#define ROLL_SETPOINT 0
+#define PITCH_SETPOINT 0
+
+#define PITCH_KP 0.4
+#define PITCH_KI 0
+#define PITCH_KD 0
+
+#define ROLL_KP 0.4
+#define ROLL_KI
+#define ROLL_KD
 
 // roll servo controller parameters
 #define ROLL_SIGNAL_PIN 2
@@ -109,7 +119,22 @@ void loop() {
         raw_imu_vals imu_reading_raw = imu.ReadCalibIMU();
         roll_pitch imu_reading_filt = imu.CompFilter(imu_reading_raw, COMP_FILTER_ALPHA, dt_imu);
 
-        PitchServo.updateServo((imu_reading_filt.pitch) * 180.0/PI);
+        // pass imu reading into controller
+
+        // for P controller
+        float correction = PitchServo.PController(PITCH_SETPOINT,-(imu_reading_filt.pitch) * 180.0/PI, PITCH_KP);   // feed negative measurement into pitch controller as inverted
+
+        // for PI controller
+        // float correction = PitchServo.PIController(PITCH_SETPOINT, -(imu_reading_filt.pitch) * 180.0/PI, PITCH_KP, PITCH_KI); // feed negative measurement into pitch controller as inverted
+
+        // for PD controller
+        // float correction = PitchServo.PDController(PITCH_SETPOINT, -(imu_reading_filt.pitch) * 180.0/PI, PITCH_KP, PITCH_KD); // feed negative measurement into pitch controller as inverted
+
+        // for PID controller
+        // float correction = PitchServo.PIDController(PITCH_SETPOINT, -(imu_reading_filt.pitch) * 180.0/PI, PITCH_KP,PITCH_KI, PITCH_KD); // feed negative measurement into pitch controller as inverted
+
+        // pass controller correction into updateServo method
+        PitchServo.updateServo(correction);
 
 
     }

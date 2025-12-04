@@ -23,6 +23,10 @@ class ServoController {
 
         float servo_write = 90.0;
 
+        float dt_sec = 0.0; // dt for controller
+        float accum_error; // for I term
+        float prev_error;
+
         // temp hardcoded Vmin and Vmax for servo analogue feedback
         float v_max = 3.07;
         float v_min = 0.22;
@@ -30,6 +34,8 @@ class ServoController {
         //flags
         bool servo_reached = false; // flag to store if servo reached position
         bool servo_time_passed = false;
+
+
 
     public: 
 
@@ -78,9 +84,23 @@ class ServoController {
 
     */
 
-    void updateServo(float _imu_reading);
+    void updateServo(float _correction);
+
+    //P controller
+    float PController(float _setpoint, float _measurement, float _kp);
+
+    //PI controller
+    float PIController(float _setpoint, float _measurement, float _kp, float _ki);
+
+    //PD controller
+    float PDController(float _setpoint, float _measurement, float _kp, float _kd);
+
+    //PID controller
+    float PIDController(float _setpoint, float _measurement, float _kp, float _ki, float _kd);
 
 };
+
+
 
 
 
